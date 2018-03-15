@@ -3,11 +3,23 @@ namespace Celest;
 
 class Celest {
 
+    /** @var string */
     protected $template = '';
+    
+    /** @var hash|of|hash */
     protected $keys = [];
+    
+    /** @var string */
     protected $delimiter = '%';
+    
+    /** @var string */
     protected $sep = '.';
 
+    /**
+     * 
+     * @param string $template
+     * @param hash $options
+     */
     public function __construct($template, $options = []) {
         $this->template = $template;
         $this->initOptions($options);
@@ -15,12 +27,18 @@ class Celest {
         $this->prepareKeys();
     }
 
+    /**
+     * 
+     * @param hash $options
+     * @return $this
+     */
     public function initOptions($options) {
         foreach(['delimiter', 'sep'] as $key) {
             if (!empty($options[$key])) {
                 $this->$key = $options[$key];
             }
         }
+        return $this;
     }
     
     private function prepareKeys() {
@@ -33,21 +51,12 @@ class Celest {
             $this->keys[$key]['nodes'][] = $rnk;
         }
     }
-
-    public function render() {
-        $nodes = $this->nodes;
-        foreach ($this->keys as $props) {
-            foreach ($props['nodes'] as $rnk) {
-                $nodes[$rnk] = $props['value'];
-            }
-        }
-        return implode('', $nodes);
-    }
-
-    public function __toString() {
-        return $this->render();
-    }
     
+    /**
+     * 
+     * @param hash|object $data
+     * @return $this
+     */
     public function inject($data) {
         $flattern = $this->flatternData($data);
         foreach ($flattern as $key => $value) {
@@ -55,6 +64,7 @@ class Celest {
                 $this->keys[$key]['value'] = $value;
             }
         }
+        return $this;
     }
 
     private function flatternData($data, $prefix = '') {
@@ -69,4 +79,21 @@ class Celest {
         return $flattern;
     }
 
+    /**
+     * 
+     * @return string
+     */
+    public function render() {
+        $nodes = $this->nodes;
+        foreach ($this->keys as $props) {
+            foreach ($props['nodes'] as $rnk) {
+                $nodes[$rnk] = $props['value'];
+            }
+        }
+        return implode('', $nodes);
+    }
+
+    public function __toString() {
+        return $this->render();
+    }
 }
