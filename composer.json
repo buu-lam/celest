@@ -1,0 +1,19 @@
+{
+    "name": "buu-lam/celest",
+    "description": "Cascade Templating",
+    "authors": [
+        {
+            "name": "Buu-Lam LE",
+            "email": "buulam.le@lilo.org"
+        }
+    ],
+    "require-dev": {
+        "codeception/codeception": "^2.4",
+        "codeception/verify": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Celest\\" : "src/"
+        }
+    }
+}
