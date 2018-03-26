@@ -25,6 +25,11 @@ class CelestCest {
         expect($this->tpl->render())->equals('test ok ok3');
     }
     
+    public function render() {
+        $this->tpl->inject(['key' => 'ok']);
+        expect($this->tpl->render(true))->equals('test ok %key2.subkey%');
+    }
+    
     public function to_string() {
         expect("$this->tpl")->equals('test  ');
     }

@@ -46,7 +46,7 @@ class Celest {
         for ($rnk = 1; $rnk < $count; $rnk += 2) {
             $key = $this->nodes[$rnk];
             if (!isset($this->keys[$key])) {
-                $this->keys[$key] = ['value' => '', 'nodes' => []];
+                $this->keys[$key] = ['value' => null, 'nodes' => []];
             }
             $this->keys[$key]['nodes'][] = $rnk;
         }
@@ -83,11 +83,14 @@ class Celest {
      * 
      * @return string
      */
-    public function render() {
+    public function render($keepKeys = false) {
         $nodes = $this->nodes;
-        foreach ($this->keys as $props) {
+        foreach ($this->keys as $key => $props) {
             foreach ($props['nodes'] as $rnk) {
-                $nodes[$rnk] = $props['value'];
+                $nodes[$rnk] = isset($props['value']) ?
+                    $props['value'] :
+                    ($keepKeys ? "$this->delimiter$key$this->delimiter": '')
+                ;
             }
         }
         return implode('', $nodes);
