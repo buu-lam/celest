@@ -6,6 +6,9 @@ class Celest {
     /** @var string */
     protected $template = '';
     
+    /** @var string */
+    protected $string = '';
+    
     /** @var hash|of|hash */
     protected $keys = [];
     
@@ -14,16 +17,42 @@ class Celest {
     
     /** @var string */
     protected $sep = '.';
+    
+    /** @var array|of| */
+    protected $collection = [];
+    
+    /** @var string */
+    protected $join = '';
+    
+    /** @var string */
+    protected $zones = [];
+    
+    /** @var string */
+    protected $zoneStart = '<!--@';
+    
+    /** @var string */
+    protected $zoneStop = '@-->';
+    
+    /** @var string */
+    protected $zoneSubStart = '<!--{';
+    
+    /** @var string */
+    protected $zoneSubStop = '}-->';
 
+    /** @var string */
+    protected $zoneSupStart = '<!--';
+    
+    /** @var string */
+    protected $zoneSupStop = '-->';
+    
     /**
      * 
      * @param string $template
      * @param hash $options
      */
     public function __construct($template, $options = []) {
-        $this->template = $template;
         $this->initOptions($options);
-        $this->nodes = explode($this->delimiter, $this->template);
+        $this->genZones ($template);
         $this->prepareKeys();
     }
 
@@ -33,7 +62,11 @@ class Celest {
      * @return $this
      */
     public function initOptions($options) {
-        foreach(['delimiter', 'sep'] as $key) {
+        $this->options = $options;
+        foreach(['delimiter', 'sep', 'join',
+            'zoneStart', 'zoneStop', 
+            'zoneSubStart', 'zoneSubStop', 
+            'zoneSupStart', 'zoneSupStop'] as $key) {
             if (!empty($options[$key])) {
                 $this->$key = $options[$key];
             }
@@ -41,7 +74,23 @@ class Celest {
         return $this;
     }
     
+    private function genZones($template) {
+        $this->template = $template;
+        $parts = explode($this->zoneStart, $this->template);
+        $this->string = array_shift($parts);
+        foreach($parts as $part) {
+            list($zoneKey, $subtemplate) = explode($this->zoneStop, $part);
+            $template = str_replace(
+                [$this->zoneSubStart, $this->zoneSubStop], 
+                [$this->zoneSupStart, $this->zoneSupStop],
+                $subtemplate
+            );
+            $this->zones[$zoneKey] = new static($template, $this->options);
+        }
+    }
+    
     private function prepareKeys() {
+        $this->nodes = explode($this->delimiter, $this->string);
         $count = count($this->nodes);
         for ($rnk = 1; $rnk < $count; $rnk += 2) {
             $key = $this->nodes[$rnk];
@@ -64,9 +113,55 @@ class Celest {
                 $this->keys[$key]['value'] = $value;
             }
         }
+        foreach($this->zones as $zone) {
+            $zone->inject($data);
+        }
+        return $this;
+    }
+    
+    /**
+     * 
+     * @param string $join
+     * @return $this
+     */
+    public function join($join) {
+        $this->join = $join;
+        return $this;
+    }
+    
+    /**
+     * 
+     * @param array|of|hash $collection
+     * @return $this
+     */
+    public function injectArray($collection) {
+        foreach($collection as $data) {
+            $this->push($data);
+        }
         return $this;
     }
 
+    /**
+     * 
+     * @param hash $data
+     * @return $this
+     */
+    public function push($data) {
+        $item = new static($this->template, $this->options);
+        $item->inject($data);
+        $this->collection[] = $item;
+        return $this;
+    }
+    
+    /**
+     * 
+     * @param string $zoneKey
+     * @return Celest
+     */
+    public function getZone($zoneKey) {
+        return $this->zones[$zoneKey];
+    }
+    
     private function flatternData($data, $prefix = '') {
         $flattern = [];
         foreach ($data as $key => $value) {
@@ -84,6 +179,12 @@ class Celest {
      * @return string
      */
     public function render($keepKeys = false) {
+        if ($this->collection) {
+            return implode($this->join, array_map(function($item) use($keepKeys) {
+                return $item->render($keepKeys);
+            }, $this->collection));
+        }
+        
         $nodes = $this->nodes;
         foreach ($this->keys as $key => $props) {
             foreach ($props['nodes'] as $rnk) {
@@ -93,7 +194,9 @@ class Celest {
                 ;
             }
         }
-        return implode('', $nodes);
+        return implode('', $nodes) . implode('', array_map(function($item) use($keepKeys) {
+                return $item->render($keepKeys);
+        }, $this->zones));
     }
 
     public function __toString() {
