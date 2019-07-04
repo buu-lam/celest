@@ -159,7 +159,9 @@ class Celest {
      * @return Celest
      */
     public function getZone($zoneKey) {
-        return $this->zones[$zoneKey];
+        return isset($this->zones[$zoneKey]) ?
+            $this->zones[$zoneKey] : null
+        ;
     }
     
     private function flatternData($data, $prefix = '') {
