@@ -18,8 +18,8 @@ class Celest {
     /** @var string */
     protected $sep = '.';
     
-    /** @var array|of| */
-    protected $collection = [];
+    /** @var null|array|of|Celest */
+    protected $collection;
     
     /** @var string */
     protected $join = '';
@@ -135,6 +135,7 @@ class Celest {
      * @return $this
      */
     public function injectArray($collection) {
+        $this->collection = [];
         foreach($collection as $data) {
             $this->push($data);
         }
@@ -181,7 +182,7 @@ class Celest {
      * @return string
      */
     public function render($keepKeys = false) {
-        if ($this->collection) {
+        if (is_array($this->collection)) {
             return implode($this->join, array_map(function($item) use($keepKeys) {
                 return $item->render($keepKeys);
             }, $this->collection));
