@@ -11,6 +11,15 @@ class Celest {
     
     /** @var hash|of|hash */
     protected $keys = [];
+
+    /** @var string */
+    protected $modify = ':';
+    
+    /** @var string[] */
+    protected $modifiers = [];
+    
+    /** @var string[] */
+    protected $keysToModify = [];
     
     /** @var string */
     protected $delimiter = '%';
@@ -54,6 +63,7 @@ class Celest {
         $this->initOptions($options);
         $this->genZones ($template);
         $this->prepareKeys();
+        $this->prepareKeysToModify();
     }
 
     /**
@@ -66,7 +76,8 @@ class Celest {
         foreach(['delimiter', 'sep', 'join',
             'zoneStart', 'zoneStop', 
             'zoneSubStart', 'zoneSubStop', 
-            'zoneSupStart', 'zoneSupStop'] as $key) {
+            'zoneSupStart', 'zoneSupStop', 
+            'modify', 'modifiers'] as $key) {
             if (!empty($options[$key])) {
                 $this->$key = $options[$key];
             }
@@ -101,6 +112,21 @@ class Celest {
         }
     }
     
+    private function prepareKeysToModify() {
+        foreach($this->keys as $key => $props) {
+            if (strpos($key, $this->modify) === false) {
+                continue;
+            }
+            list($keyToModify, $modifier) = explode($this->modify, $key);
+            if (!isset($this->keysToModify[$keyToModify])) {
+                $this->keysToModify[$keyToModify] = [];
+            }
+            if (!in_array($modifier, $this->keysToModify[$keyToModify])) {
+                $this->keysToModify[$keyToModify][] = $modifier;
+            }
+        }
+    }
+
     /**
      * 
      * @param hash|object $data
@@ -112,11 +138,21 @@ class Celest {
             if (isset($this->keys[$key])) {
                 $this->keys[$key]['value'] = $value;
             }
+            if (isset($this->keysToModify[$key])) {
+                $this->injectModifier($key, $value);
+            }
         }
         foreach($this->zones as $zone) {
             $zone->inject($data);
         }
         return $this;
+    }
+    
+    public function injectModifier($key, $value) {
+        foreach($this->keysToModify[$key] as $modifier) {
+            $callable = $this->modifiers[$modifier];
+            $this->keys["$key:$modifier"]['value'] = $callable($value);
+        }
     }
     
     /**

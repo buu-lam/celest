@@ -38,6 +38,12 @@ class CelestCest {
         expect($this->nestingTpl->render())->equals('test ok ok2 ok3');
     }
     
+    public function inject_modifiers() {
+        $withModifiers = new Celest('test %key:md5%', ['modifiers' => ['md5' => 'md5']]);
+        $withModifiers->inject(['key' => 'test']);
+        expect($withModifiers->render())->equals('test 098f6bcd4621d373cade4e832627b4f6');
+    }
+    
     public function render() {
         $this->tpl->inject(['key' => 'ok']);
         expect($this->tpl->render(true))->equals('test ok %key2.subkey%');
@@ -49,6 +55,9 @@ class CelestCest {
             ['key' => 'ok2', 'key2' => ['subkey' => 'ok21']]
         ]);
         expect($this->tpl->render())->equals('test ok1 ok11test ok2 ok21');
+        $this->tpl->injectArray([]);
+        expect($this->tpl->render())->equals('');
+        
     }
     
     public function push() {
