@@ -1,59 +1,63 @@
 <?php
+
 namespace Celest;
 
 class Celest {
 
+    /** @var array|of|mixed */
+    protected $options = [];
+    
     /** @var string */
     protected $template = '';
-    
+
     /** @var string */
     protected $string = '';
-    
+
     /** @var hash|of|hash */
     protected $keys = [];
 
     /** @var string */
     protected $modify = ':';
-    
+
     /** @var string[] */
     protected $modifiers = [];
-    
+
     /** @var string[] */
     protected $keysToModify = [];
-    
+
     /** @var string */
     protected $delimiter = '%';
-    
+
     /** @var string */
     protected $sep = '.';
-    
+
     /** @var null|array|of|Celest */
     protected $collection;
-    
+
     /** @var string */
     protected $join = '';
-    
+
     /** @var string */
     protected $zones = [];
-    
+
     /** @var string */
     protected $zoneStart = '<!--@';
-    
+
     /** @var string */
     protected $zoneStop = '@-->';
-    
+
     /** @var string */
     protected $zoneSubStart = '<!--{';
-    
+
     /** @var string */
     protected $zoneSubStop = '}-->';
 
     /** @var string */
     protected $zoneSupStart = '<!--';
-    
+
     /** @var string */
     protected $zoneSupStop = '-->';
-    
+
     /**
      * 
      * @param string $template
@@ -61,7 +65,7 @@ class Celest {
      */
     public function __construct($template, $options = []) {
         $this->initOptions($options);
-        $this->genZones ($template);
+        $this->genZones($template);
         $this->prepareKeys();
         $this->prepareKeysToModify();
     }
@@ -73,33 +77,33 @@ class Celest {
      */
     public function initOptions($options) {
         $this->options = $options;
-        foreach(['delimiter', 'sep', 'join',
-            'zoneStart', 'zoneStop', 
-            'zoneSubStart', 'zoneSubStop', 
-            'zoneSupStart', 'zoneSupStop', 
-            'modify', 'modifiers'] as $key) {
+        foreach (['delimiter', 'sep', 'join',
+        'zoneStart', 'zoneStop',
+        'zoneSubStart', 'zoneSubStop',
+        'zoneSupStart', 'zoneSupStop',
+        'modify', 'modifiers'] as $key) {
             if (!empty($options[$key])) {
                 $this->$key = $options[$key];
             }
         }
         return $this;
     }
-    
+
     private function genZones($template) {
         $this->template = $template;
         $parts = explode($this->zoneStart, $this->template);
         $this->string = array_shift($parts);
-        foreach($parts as $part) {
+        foreach ($parts as $part) {
             list($zoneKey, $subtemplate) = explode($this->zoneStop, $part);
             $template = str_replace(
-                [$this->zoneSubStart, $this->zoneSubStop], 
+                [$this->zoneSubStart, $this->zoneSubStop],
                 [$this->zoneSupStart, $this->zoneSupStop],
                 $subtemplate
             );
             $this->zones[$zoneKey] = new static($template, $this->options);
         }
     }
-    
+
     private function prepareKeys() {
         $this->nodes = explode($this->delimiter, $this->string);
         $count = count($this->nodes);
@@ -111,9 +115,9 @@ class Celest {
             $this->keys[$key]['nodes'][] = $rnk;
         }
     }
-    
+
     private function prepareKeysToModify() {
-        foreach($this->keys as $key => $props) {
+        foreach ($this->keys as $key => $props) {
             if (strpos($key, $this->modify) === false) {
                 continue;
             }
@@ -142,19 +146,19 @@ class Celest {
                 $this->injectModifier($key, $value);
             }
         }
-        foreach($this->zones as $zone) {
+        foreach ($this->zones as $zone) {
             $zone->inject($data);
         }
         return $this;
     }
-    
+
     public function injectModifier($key, $value) {
-        foreach($this->keysToModify[$key] as $modifier) {
+        foreach ($this->keysToModify[$key] as $modifier) {
             $callable = $this->modifiers[$modifier];
             $this->keys["$key:$modifier"]['value'] = $callable($value);
         }
     }
-    
+
     /**
      * 
      * @param string $join
@@ -164,7 +168,7 @@ class Celest {
         $this->join = $join;
         return $this;
     }
-    
+
     /**
      * 
      * @param array|of|hash $collection
@@ -172,7 +176,7 @@ class Celest {
      */
     public function injectArray($collection) {
         $this->collection = [];
-        foreach($collection as $data) {
+        foreach ($collection as $data) {
             $this->push($data);
         }
         return $this;
@@ -189,7 +193,7 @@ class Celest {
         $this->collection[] = $item;
         return $this;
     }
-    
+
     /**
      * 
      * @param string $zoneKey
@@ -200,7 +204,7 @@ class Celest {
             $this->zones[$zoneKey] : null
         ;
     }
-    
+
     private function flatternData($data, $prefix = '') {
         $flattern = [];
         foreach ($data as $key => $value) {
@@ -220,25 +224,26 @@ class Celest {
     public function render($keepKeys = false) {
         if (is_array($this->collection)) {
             return implode($this->join, array_map(function($item) use($keepKeys) {
-                return $item->render($keepKeys);
-            }, $this->collection));
+                    return $item->render($keepKeys);
+                }, $this->collection));
         }
-        
+
         $nodes = $this->nodes;
         foreach ($this->keys as $key => $props) {
             foreach ($props['nodes'] as $rnk) {
                 $nodes[$rnk] = isset($props['value']) ?
                     $props['value'] :
-                    ($keepKeys ? "$this->delimiter$key$this->delimiter": '')
+                    ($keepKeys ? "$this->delimiter$key$this->delimiter" : '')
                 ;
             }
         }
         return implode('', $nodes) . implode('', array_map(function($item) use($keepKeys) {
-                return $item->render($keepKeys);
-        }, $this->zones));
+                    return $item->render($keepKeys);
+                }, $this->zones));
     }
 
     public function __toString() {
         return $this->render();
     }
+
 }
