@@ -37,9 +37,12 @@ class Celest {
     /** @var string */
     protected $join = '';
 
-    /** @var string */
+    /** @var array|of|Celest */
     protected $zones = [];
-
+    
+    /** @var array|of|string */
+    protected $nodes = [];
+    
     /** @var string */
     protected $zoneStart = '<!--@';
 
